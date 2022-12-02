@@ -1,79 +1,16 @@
-from flask import Flask, render_template, request, redirect, session, flash, url_for
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 
-
-class Jogo:
-    def __init__(self, nome, categoria, console):
-        self.nome = nome
-        self.categoria = categoria
-        self.console = console
-
-jogo1 = Jogo('FIFA', 'Sport', 'PS4')
-jogo2 = Jogo('Mario Bros', 'Adventure', 'Super Nintendo')
-jogo3 = Jogo('GTA', 'Adventure', 'XBOX 360')
-jogo4 = Jogo('RDR2', 'Adventure', 'XBOX 360')
-jogo5 = Jogo('SimCity2000', 'logica', 'PC')
-lista = [jogo1, jogo2, jogo3, jogo4, jogo5]
-
-class Usuario:
-    def __init__(self, nome, nickname, senha):
-        self.nome = nome
-        self.nickname = nickname
-        self.senha = senha
-
-usuario1 = Usuario("Joe", "JO", "1234")
-usuario2 = Usuario("Ruy", "RY", "1234")
-usuario3 = Usuario("Mark", "MK", "4321")
-
-#DICIONÁRIO *********************************
-usuarios = { usuario1.nickname : usuario1,
-             usuario2.nickname : usuario2,
-             usuario3.nickname : usuario3 }
-#*********************************************
 app = Flask(__name__)
-app.secret_key = 'alura'
+app.config.from_pyfile('config.py')
 
-@app.route('/')
-def index():
-    return render_template('lista.html', titulo='Jogos', jogos = lista)
+db = SQLAlchemy(app)
+csrf = CSRFProtect(app)
 
-@app.route('/novo')
-def novo():
-    if 'usuario_logado'not in session or session['usuario_logado'] is None:
-        return redirect(url_for('login', proxima=url_for('novo')))
-    else:
-        return render_template('novo.html', titulo='Cadastre um jogo!')
+from views_game import *
+from views_user import *
 
-@app.route('/criar', methods=['POST',])
-def criar():
-    nome = request.form['nome']
-    categoria = request.form['categoria']
-    console = request.form['console']
-    jogo = Jogo(nome, categoria, console)
-    lista.append(jogo)
-    return redirect (url_for('index'))
 
-@app.route('/login')
-def login():
-    proxima = request.args.get('proxima')
-    return render_template('login.html', proxima=proxima)
-
-@app.route('/autenticar', methods=['POST',])
-def autenticar():
-    if request.form['usuario'] in usuarios:
-        usuario = usuarios[request.form['usuario']]
-        if request.form['senha'] == usuario.senha:
-            session['usuario_logado'] = usuario.nickname
-            flash(usuario.nickname + ' logado com sucesso!')
-            proxima_pagina = request.form['proxima']
-            return redirect(proxima_pagina)
-    else:
-        flash('Usuário não logado.')
-        return redirect(url_for('login'))
-
-@app.route('/logout')
-def logout():
-    session['usuario_logado'] = None
-    flash('Logout com sucesso!')
-    return redirect(url_for('index'))
-
-app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)
